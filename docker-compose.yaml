@@ -2,10 +2,8 @@ version: "3.5"
 
 services:
   spark-python-compatibility-test:
-    image: rangareddy1988/spark-python-compatibility-test:1.0.0
+    image: rangareddy1988/spark-python-compatibility-test:latest
     container_name: spark-python-compatibility-test
-    ports:
-      - 8888:8888
     volumes:
       - ./data:/opt/data
       - $HOME/.m2:/root/.m2

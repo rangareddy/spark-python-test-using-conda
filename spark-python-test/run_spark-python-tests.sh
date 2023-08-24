@@ -107,7 +107,7 @@ run_pyspark_tests() {
                 export SPARK_HOME="${DATA_DIR}/spark/spark_${spark_min_version}"
                 if [ ! -d "$SPARK_HOME" ]; then
                     log_debug "Download the Spark version $spark_version source code"
-                    git clone --branch "v$spark_version" --single-branch https://github.com/apache/spark.git "$SPARK_HOME"
+                    git -c advice.detachedHead=false clone --branch "v$spark_version" --single-branch https://github.com/apache/spark.git "$SPARK_HOME"
                 fi
 
                 SPARK_BUILD_CMD_OUPUT_FILE="${SPARK_HOME}/spark_build_output.log"
