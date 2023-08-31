@@ -6,6 +6,8 @@ echo "Running the script $script_name"
 export DATA_DIR=${DATA_DIR:-"/opt/data"}
 echo "Data Directory Path: $DATA_DIR"
 
+export BUILD_TOOL=${BUILD_TOOL:-"mvn"}
+
 # Define Spark2 versions to test
 export SPARK2_VERSIONS=("2.3.0" "2.3.1" "2.3.2" "2.3.3" "2.3.4" "2.4.0" "2.4.1" "2.4.2" "2.4.3" "2.4.4" "2.4.5" "2.4.6" "2.4.7" "2.4.8")
 
@@ -14,6 +16,24 @@ export SPARK3_VERSIONS=("3.0.0" "3.0.1" "3.0.2" "3.0.3" "3.1.1" "3.1.2" "3.1.3" 
 
 # Define Spark versions to test
 export SPARK_VERSIONS=("${SPARK2_VERSIONS[@]}" "${SPARK3_VERSIONS[@]}")
+
+BUILD_CMD=""
+if test "$BUILD_TOOL" == "mvn"; then
+    if command -v mvn >/dev/null; then
+        BUILD_CMD="mvn -DskipTests clean package -Pyarn -Phive -Phive-thriftserver"
+    else
+        BUILD_CMD="./build/mvn -DskipTests clean package -Pyarn -Phive -Phive-thriftserver"
+    fi
+elif test "$BUILD_TOOL" == "sbt"; then
+    if command -v sbt >/dev/null; then
+        BUILD_CMD="sbt -DskipTests clean package -Pyarn -Phive -Phive-thriftserver"
+    else
+        BUILD_CMD="./build/sbt -DskipTests clean package -Pyarn -Phive -Phive-thriftserver"
+    fi
+else
+    echo "Invalid Build Tool. Specify either mvn or sbt"
+    exit 1
+fi
 
 for spark_version in "${SPARK_VERSIONS[@]}"; do
     echo "Check and download the Spark version $spark_version source code"
@@ -40,7 +60,7 @@ for spark_version in "${SPARK_VERSIONS[@]}"; do
             BUILD_ARGS="-Pflume -Pkafka-0-8"
         fi
         cd ${SPARK_HOME}
-        ./build/mvn -DskipTests clean package -Pyarn -Phive -Phive-thriftserver ${BUILD_ARGS} > "${SPARK_BUILD_CMD_OUPUT_FILE}"
+        $BUILD_CMD ${BUILD_ARGS} > "${SPARK_BUILD_CMD_OUPUT_FILE}"
         if grep -q "BUILD SUCCESS" "${SPARK_BUILD_CMD_OUPUT_FILE}" ; then
             echo "Spark version $spark_version source code build success"
             touch "${SPARK_BUILD_SUCCESS_STATUS_FILE}"
