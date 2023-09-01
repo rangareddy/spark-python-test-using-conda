@@ -27,7 +27,7 @@ ENV PATH=$JAVA_HOME/bin:$PATH
 RUN apt-get update --fix-missing && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         apt-utils tzdata vim less git wget curl gcc libpq-dev libgtk2.0-dev \
-        net-tools build-essential software-properties-common cmake && \
+        net-tools build-essential software-properties-common cmake bash-completion && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN conda update --all -y && \

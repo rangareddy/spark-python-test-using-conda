@@ -161,12 +161,11 @@ def get_overall_test_status(spark_submit_result_obj, pyspark_unit_test_modules):
         overall_status_count = 50
         for pyspark_core_unit_test in pyspark_unit_test_modules:
             module_test_status = pyspark_core_unit_test['test_result']
-            
             if module_test_status == 'Success':
                 overall_status_count = overall_status_count + 10
             elif module_test_status == 'Failed':
                 test_result_message = pyspark_core_unit_test['test_result_message']
-                print("Check this logic later" + test_result_message)
+                #print("Check this logic later" + test_result_message)
         
         return ("Success" if overall_status_count == 100 else "Not Tested" if overall_status_count < 50 else "Failed")
     else:
@@ -178,7 +177,6 @@ def get_overall_test_status(spark_submit_result_obj, pyspark_unit_test_modules):
             pyspark_core_unit_test = pyspark_unit_test_modules[0]
             test_result_message = pyspark_core_unit_test['test_result_message']
             pyspark_unit_test_error_message = extract_content_between_strings(test_result_message, "TypeError:")
-            print(f"{spark_submit_result_status} : {pyspark_core_unit_test['test_result']}")
             if spark_submit_error_message == pyspark_unit_test_error_message:
                 status = "Not Compatible"
                 message = get_escaped_message(spark_submit_test_result_message)
