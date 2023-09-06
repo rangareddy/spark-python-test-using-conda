@@ -1,10 +1,9 @@
 #!/bin/bash
 
 DOCKER_USER_NAME=${DOCKER_USER_NAME:-"rangareddy1988"}
-IMAGE_NAME=${IMAGE_NAME:-"spark-python-compatibility-test"}
-ANACONDA_VERSION=${ANACONDA_VERSION:-"2023.07-1"} 
-#2020.11 2021.11 2022.10
-TAG_VERSION=$(echo "$ANACONDA_VERSION" | sed 's/\./_/g' | cut -c1-7)
+IMAGE_NAME=${IMAGE_NAME:-"python-compatibility-test"}
+MINICONDA_VERSION=${MINICONDA_VERSION:-"23.5.2-0"}
+TAG_VERSION=$(echo "$MINICONDA_VERSION" | sed 's/\./_/g' | sed 's/-/_/g')
 TAG_NAME="${DOCKER_USER_NAME}/${IMAGE_NAME}"
 
 GREEN='\033[0;32m'
@@ -25,10 +24,12 @@ if [[ $(uname -m) == 'arm64' ]]; then
     export DOCKER_DEFAULT_PLATFORM="linux/amd64"
 fi
 docker build \
+    --build-arg MINICONDA_VERSION=$MINICONDA_VERSION \
     --build-arg IMAGE_VERSION=$TAG_VERSION \
     -t "${TAG_NAME}:${TAG_VERSION}" \
     -t "${TAG_NAME}:latest" \
-    -f spark-python-test/Dockerfile . --progress=plain --no-cache
+    -f python-compatibility-test/Dockerfile . \
+    --progress=plain --no-cache
 
 # Check if the image build is successful
 if ! docker images | grep "$TAG_NAME" > /dev/null; then

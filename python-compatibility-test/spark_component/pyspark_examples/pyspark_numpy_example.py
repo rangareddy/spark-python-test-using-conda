@@ -27,7 +27,7 @@ def mult(x):
 x = np.arange(1000)
 distData = spark.sparkContext.parallelize(x)
 count=distData.map(mult).count()
-print(count)
+print("Numpy Count: " + str(count))
 spark.stop()
 
 print('------- SparkVersion: {}, PythonVersion={}, PythonMinVersion={} and NumpyVersion={} -------'.format(spark_version, py_version, python_version, numpy_version))
