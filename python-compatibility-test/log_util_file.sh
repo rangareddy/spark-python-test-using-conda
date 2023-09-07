@@ -30,33 +30,38 @@ else
 fi 
 
 log() {
-    local level="$1"
+    local level_index="$1"
     local message="$2"
-    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-    echo -e "[$timestamp][$level] $message"
-    echo -e "[$timestamp][$level] $message" >> "$OUTPUT_LOG_FILE"
-}
 
-log_debug() {
-    if [ "0" -ge $LOG_LEVEL_INDEX ]; then
-        log "DEBUG" "$@"
-    fi 
-}
-
-log_info() {
-    if [ "1" -ge $LOG_LEVEL_INDEX ]; then
-        log "${GREEN}INFO${NC}" "$@"
+    if [ "$level_index" -ge $LOG_LEVEL_INDEX ]; then
+        local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+        level_msg=${LOG_LEVELS[$level_index]}
+        if [ "3" == $level_index ]; then
+            level="${RED}${level_msg}${NC}"
+        elif [ "2" -eq $level_index ]; then
+            level="${YELLOW}${level_msg}${NC}"
+        elif [ "1" -eq $level_index ]; then
+            level="${GREEN}${level_msg}${NC}"
+        else 
+            level="${level_msg}"
+        fi 
+        echo -e "[$timestamp][$level] $message"
+        echo -e "[$timestamp][$level_msg] $message" >> "$OUTPUT_LOG_FILE"
     fi
 }
 
+log_debug() {
+    log "0" "$@" 
+}
+
+log_info() {
+    log "1" "$@"
+}
+
 log_warn() {
-    if [ "2" -ge $LOG_LEVEL_INDEX ]; then
-        log "${YELLOW}WARN${NC}" "$@"
-    fi 
+    log "2" "$@"
 }
 
 log_error() {
-    if [ "3" -ge $LOG_LEVEL_INDEX ]; then
-        log "${RED}ERROR${NC}" "$@"
-    fi 
+    log "3" "$@"
 }

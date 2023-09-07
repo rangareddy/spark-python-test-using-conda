@@ -37,6 +37,7 @@ log_debug "$message"
 # This function creates a conda environment with the specified Python version.
 create_conda_env() {
     CONDA_ENV_NAME="$1"
+    python_version="$2"
 
     # The function checks if the conda environment already exists.
     if ! conda env list | grep -q "$CONDA_ENV_NAME" ; then
@@ -62,7 +63,9 @@ create_conda_env() {
 # This function loops through the list of Python versions and runs the compatibility tests for each version.
 run_python_compatibility_tests() {
     counter=0
-    for python_version in "${PYTHON_VERSIONS[@]}"; do
+    #for python_version in "${PYTHON_VERSIONS[@]}"; do
+    for ((i=${#PYTHON_VERSIONS[@]}-1; i>=0; i--)); do
+        export python_version="${PYTHON_VERSIONS[$i]}"
 
         # Increment the counter variable
         ((counter++))
@@ -73,7 +76,7 @@ run_python_compatibility_tests() {
 
         # Create a conda environment with the current Python version.
         local CONDA_ENV_NAME="my_env_$(echo "$python_version" | sed 's/\./_/g')"
-        create_conda_env "$CONDA_ENV_NAME"
+        create_conda_env "$CONDA_ENV_NAME" "$python_version"
 
         # If the conda environment exists, then run the compatibility tests.
         if conda env list | grep -q "$CONDA_ENV_NAME" ; then

@@ -78,14 +78,13 @@ run_spark_submit_apps_tests() {
     local spark_submit_file_prefix="${spark_submit_app_tests_dir}/Spark_Submit_${spark_minified_version}_${python_minified_version}"
 
     spark_submit_udf_example_file="${spark_submit_file_prefix}_UDF_Example.log"
-    run_spark_submit_app "$spark_submit_udf_example_file" "pyspark_udf_example.py" &
+    run_spark_submit_app "$spark_submit_udf_example_file" "pyspark_udf_example.py"
 
     spark_submit_pandas_example_file="${spark_submit_file_prefix}_Pandas_Example.log"
-    run_spark_submit_app "$spark_submit_pandas_example_file" "pyspark_pandas_example.py" &
+    run_spark_submit_app "$spark_submit_pandas_example_file" "pyspark_pandas_example.py"
 
     spark_submit_numpy_example_file="${spark_submit_file_prefix}_Numpy_Example.log"
-    run_spark_submit_app "$spark_submit_numpy_example_file" "pyspark_numpy_example.py" &
-    wait
+    run_spark_submit_app "$spark_submit_numpy_example_file" "pyspark_numpy_example.py"
 }
 
 # Running the PySpark Modules tests
@@ -111,7 +110,7 @@ run_pyspark_modules_unit_tests() {
             TEST_FAILURE_STATUS=""
             if [ -f "$$RUN_TESTS_OUTPUT_FILE" ]; then 
                 TEST_FAILURE_STATUS=$(awk '/Traceback \(most recent call last\)/,/TypeError:/' "$RUN_TESTS_OUTPUT_FILE")
-            fi 
+            fi
             if [ -n "$TEST_FAILURE_STATUS" ]; then
                 log_warn "Spark ${spark_version} Python ${python_version} are not supported for module ${modules_to_test}"
             elif grep -q "FAILED (failures=\|Had test failures in" "$RUN_TESTS_OUTPUT_FILE" ; then
@@ -127,12 +126,13 @@ run_pyspark_modules_unit_tests() {
             if [ -z "$RUN_TESTS_OUTPUT_FILE" ]; then
                 RUN_TESTS_OUTPUT_FILE="${pyspark_unit_tests_res_dir}/${python_minified_version}-${modules_to_test}"
             fi 
-            log_debug "Run the Spark version ${spark_version} Python version ${python_version} Module ${modules_to_test} test cases"
+            log_debug "Running the Spark version ${spark_version} Python version ${python_version} Module ${modules_to_test} test cases"
             module_test_start_msg="[$(date +'%Y-%m-%d %H:%M:%S')] Running the Pyspark ${spark_version}:${python_version} unit tests for modules ${modules_to_test} started"
             echo "$module_test_start_msg" > "${RUN_TESTS_OUTPUT_FILE}"
             "$SPARK_HOME"/python/run-tests --modules "${modules_to_test}" --python-executables=python >> "${RUN_TESTS_OUTPUT_FILE}"
             module_test_end_msg="[$(date +'%Y-%m-%d %H:%M:%S')] Running the Pyspark ${spark_version}:${python_version} unit tests for modules ${modules_to_test} completed"
             echo "$module_test_end_msg" >> "${RUN_TESTS_OUTPUT_FILE}"
+            log_info "Finished the Spark version ${spark_version} Python version ${python_version} Module ${modules_to_test} test cases"
         fi
     done
     log_info "Finished PySpark ${spark_version} Unit tests with Python version ${python_version}"
