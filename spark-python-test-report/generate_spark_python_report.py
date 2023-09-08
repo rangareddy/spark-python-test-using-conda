@@ -7,6 +7,7 @@ cwd = os.getcwd()
 
 python_versions = ["2.7", "3.4", "3.5", "3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
 python_modules  = ["pyspark-core", "pyspark-sql", "pyspark-streaming", "pyspark-mllib", "pyspark-ml"]
+spark_submit_examples = ['UDF_Example', 'Pandas_Example', 'Numpy_Example']
 spark2_versions = ["2.3.0","2.3.1","2.3.2","2.3.3","2.3.4","2.4.0","2.4.1","2.4.2","2.4.3","2.4.4","2.4.5","2.4.6","2.4.7","2.4.8"]
 spark3_versions = ["3.0.0","3.0.1","3.0.2","3.0.3","3.1.1","3.1.2","3.1.3","3.2.0","3.2.1","3.2.2","3.2.3","3.3.0","3.3.1","3.3.2","3.4.0","3.4.1"]
 spark_versions  = []
@@ -63,33 +64,43 @@ def extract_content_between_strings(input_string, beginning_str = None, ending_s
 
     return spark_submit_error_message
 
-def get_spark_submit_result(spark_version, py_version, spark_submit_tests_dir):
-    file_name = f"PySpark_{spark_version}_Test_With_Python_{py_version}"
-    file_list = get_file_list(get_dir_file_list(spark_submit_tests_dir), file_name)
-    if file_list:
-        spark_submit_test_result_file = file_list[0]
-        spark_submit_test_output = get_file_content(get_directory_path(spark_submit_tests_dir, spark_submit_test_result_file))
-        if spark_submit_test_output.__contains__("Traceback (most recent call last):"):
-            failed_output_message = extract_content_between_strings(spark_submit_test_output, "Traceback (most recent call last):", 
-                                                                    "TypeError:")
-            return {"test_result": "Failed", "test_result_message": failed_output_message}
-        else:
-            return {"test_result": "Success", "test_result_message": ""}
+def get_spark_submit_result(py_version, spark_submit_apps_logs_dir):
+    spark_submit_tests_files = get_dir_file_list(spark_submit_apps_logs_dir)
+    spark_submit_python_result_files = get_file_list(spark_submit_tests_files, py_version)
+    spark_submit_test_results = []
+    for spark_submit_example in spark_submit_examples:
+        file_list = get_file_list(spark_submit_python_result_files, spark_submit_example)
+        test_result = "Not Tested"
+        test_result_message = ""
+        if file_list:
+            spark_submit_test_result_file = file_list[0]
+            spark_submit_test_output = get_file_content(get_directory_path(spark_submit_apps_logs_dir, spark_submit_test_result_file))
+            if spark_submit_test_output.__contains__("Traceback (most recent call last):"):
+                failed_output_message = extract_content_between_strings(spark_submit_test_output, "Traceback (most recent call last):", 
+                                                                        "TypeError:")
+                test_result = "Failed"
+                test_result_message = failed_output_message
+            else:
+                test_result = "Success"
         
-    else:
-       return {"test_result": "Not Tested", "test_result_message": ""}
+        spark_submit_test_results.append({"spark_submit_example" : spark_submit_example, "test_result": test_result, "test_result_message": test_result_message})
 
-def get_pyspark_unit_test_modules(spark_version, pyspark_unit_test_results_files, pyspark_run_tests_results, py_version):
+    return spark_submit_test_results
+
+def get_pyspark_unit_test_modules(py_version, pyspark_unit_tests_logs_dir):
     pyspark_unit_test_modules = []
+    pyspark_run_tests_files = get_dir_file_list(pyspark_unit_tests_logs_dir)
+    spark_python_unit_test_result_files = get_file_list(pyspark_run_tests_files, py_version)
+
     for python_module in python_modules:
         python_module_result = "Not Tested"
         python_module_message = ""
         pyspark_unit_test_module_file_name = next(
-            (f for f in pyspark_unit_test_results_files if f.startswith(py_version) and f.__contains__(python_module)),
+            (f for f in spark_python_unit_test_result_files if f.startswith(py_version) and f.__contains__(python_module)),
             None
         )
         if pyspark_unit_test_module_file_name:
-            pyspark_unit_test_module_file = os.path.join(pyspark_run_tests_results, pyspark_unit_test_module_file_name)
+            pyspark_unit_test_module_file = os.path.join(pyspark_unit_tests_logs_dir, pyspark_unit_test_module_file_name)
             pyspark_unit_test_module_content = get_file_content(pyspark_unit_test_module_file)
             python_module_result = "Failed"
             if "Tests passed in" in pyspark_unit_test_module_content:
@@ -156,7 +167,8 @@ def get_td_by_status(title, obj_res):
 
 def get_overall_test_status(spark_submit_result_obj, pyspark_unit_test_modules):
     overall_status_count = 0
-    spark_submit_result_status = spark_submit_result_obj['test_result']
+    spark_submit_result_udf_example = spark_submit_result_obj[0]
+    spark_submit_result_status = spark_submit_result_udf_example['test_result']
     if spark_submit_result_status == 'Success':
         overall_status_count = 50
         for pyspark_core_unit_test in pyspark_unit_test_modules:
@@ -172,7 +184,7 @@ def get_overall_test_status(spark_submit_result_obj, pyspark_unit_test_modules):
         if spark_submit_result_status == "Not Tested":
             return "Not Tested"
         else:
-            spark_submit_test_result_message = spark_submit_result_obj['test_result_message']
+            spark_submit_test_result_message = spark_submit_result_udf_example['test_result_message']
             spark_submit_error_message = extract_content_between_strings(spark_submit_test_result_message, "TypeError:")
             pyspark_core_unit_test = pyspark_unit_test_modules[0]
             test_result_message = pyspark_core_unit_test['test_result_message']
@@ -218,6 +230,8 @@ def get_html_content(data):
                 <th scope="col">Spark Version</th>
                 <th scope="col">Python Version</th>
                 <th scope="col">Spark Submit Status</th>
+                <th scope="col">Spark Pandas Status</th>
+                <th scope="col">Spark Numpy Status</th>
                 <th scope="col">PySpark Core Unit Tests</th>
                 <th scope="col">PySpark SQL Unit Tests</th>
                 <th scope="col">PySpark Streaming Unit Tests</th>
@@ -244,7 +258,9 @@ def get_html_content(data):
             <tr scope=\"row\" style='background-color: {random_color}'>
                 <td>{spark_version}</td>
                 <td>{python_version}</td>
-                {get_td_by_status('Spark Submit Status', spark_submit_result)}
+                {get_td_by_status('Spark Submit UDF Status', spark_submit_result[0])}
+                {get_td_by_status('Spark Submit Pandas Status', spark_submit_result[0])}
+                {get_td_by_status('Spark Submit Numpy Status', spark_submit_result[0])}
                 {get_td_by_status('PySpark Core Unit Tests', pyspark_unit_test_modules[0])}
                 {get_td_by_status('PySpark SQL Unit Tests', pyspark_unit_test_modules[1])}
                 {get_td_by_status('PySpark Streaming Unit Tests', pyspark_unit_test_modules[2])}
@@ -287,28 +303,24 @@ def write_html_content_to_file(file_name, html_content):
 def main():
     data_dir_path = get_directory_path(cwd, "data")
     spark_app_logs_dir = get_directory_path(data_dir_path, "spark_app_logs")
-    pyspark_run_tests_path = get_directory_path(spark_app_logs_dir, "pyspark-run-tests")
-    pyspark_run_tests_files = get_dir_file_list(pyspark_run_tests_path)
-
     spark_python_test_report_data = []
+
     # Spark Versions
     for spark_version in spark_versions:
-        pyspark_run_tests_results = os.path.join(pyspark_run_tests_path, spark_version)
-        pyspark_run_tests_results_files = get_dir_file_list(pyspark_run_tests_results)
         spark_min_version = spark_version.replace(".", "")
-        spark_submit_tests_dir = os.path.join(spark_app_logs_dir, spark_version[0], spark_min_version)
+        pyspark_unit_tests_logs_dir = get_directory_path(spark_app_logs_dir, f"{spark_min_version}/spark_python_unit_test_logs")
+        spark_submit_apps_logs_dir = get_directory_path(spark_app_logs_dir, f"{spark_min_version}/spark_submit_app_logs")
 
         # Python Versions
         for python_version in python_versions:
             py_version = python_version.replace(".", "")
             spark_version_report = {"spark_version": spark_version, "python_version":python_version}
+
             # Spark-Submit Result
-            spark_version_report["spark_submit_result"] = get_spark_submit_result(spark_min_version, py_version, spark_submit_tests_dir)
+            spark_version_report["spark_submit_result"] = get_spark_submit_result(py_version, spark_submit_apps_logs_dir)
             
-            pyspark_run_tests_files = get_file_list(pyspark_run_tests_results_files, py_version)
             # Pyspark Unit Tests Result
-            spark_version_report["pyspark_unit_test_modules"] = get_pyspark_unit_test_modules(spark_version, pyspark_run_tests_files, 
-                                        pyspark_run_tests_results, py_version)
+            spark_version_report["pyspark_unit_test_modules"] = get_pyspark_unit_test_modules(py_version, pyspark_unit_tests_logs_dir)
             spark_python_test_report_data.append(spark_version_report)
 
     html_content = get_html_content(spark_python_test_report_data)
